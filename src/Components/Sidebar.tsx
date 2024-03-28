@@ -1,4 +1,4 @@
-import { Avatar, Box, Center, Divider, HStack, Heading, IconButton, Input, InputGroup, InputLeftAddon, Text, Tooltip, VStack } from "@chakra-ui/react";
+import { Avatar, Box, Center, Divider, HStack, Heading, IconButton, Input, InputGroup, InputLeftAddon, Menu, MenuButton, MenuDivider, MenuGroup, MenuItem, MenuList, Text, Tooltip, VStack, useToast } from "@chakra-ui/react";
 import Logo from "../assets/favicon.png"
 import { FormEvent, Fragment, ReactNode, useState, } from "react"
 import { IconType } from "react-icons";
@@ -10,7 +10,8 @@ import MobileSidebar from "./MobileSidebar";
 import { BiSearch } from "react-icons/bi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { BsChatDots } from "react-icons/bs";
-import { User } from "firebase/auth";
+import { User, getAuth, signOut } from "firebase/auth";
+import { LuLogOut } from "react-icons/lu";
 export interface SidebarItemButtonProps {
     idx: number;
     Icon: IconType;
@@ -43,11 +44,37 @@ interface SidebarProps {
 }
 function Sidebar({ children, currentUser }: SidebarProps) {
     const location = useLocation();
-    const [searchVal, setSearchVal] = useState<string | number | readonly string[] | undefined>()
+    const [searchVal, setSearchVal] = useState<string | number | readonly string[] | undefined>();
+    const navigate = useNavigate();
+    const toast = useToast();
     const handleSearch = (event: FormEvent) => {
         event.preventDefault();
     }
-
+    const handleLogout = () => {
+        const auth = getAuth();
+        const signoutPromise = signOut(auth);
+        signoutPromise.then(() => navigate("/login"))
+        toast.promise(signoutPromise, {
+            loading: {
+                title: "Logging Out",
+                description: "Please wait...",
+                isClosable: false,
+                position: "bottom-right"
+            },
+            success: {
+                title: "Successfully Logged Out",
+                description: "You have logged out from Diarytrail ",
+                isClosable: false,
+                position: "bottom-right"
+            },
+            error: {
+                title: "Failed To Log Out",
+                description: "Something Error Occured! Try again.",
+                isClosable: false,
+                position: "bottom-right"
+            }
+        })
+    }
     return (
 
         <Fragment>
@@ -80,7 +107,7 @@ function Sidebar({ children, currentUser }: SidebarProps) {
 
 
                 </div>
-                <div className={twMerge("h-full relative flex-1 overflow-y-auto py-2")}>
+                <div className={twMerge("min-h-screen relative flex-1 overflow-y-auto py-2")}>
                     {/* Top Nav */}
                     <div className="h-[15vh] py-7 px-2 w-full flex justify-end items-center">
                         <div className="p-2 w-fit h-fit bg-white shadow-customized rounded-full flex gap-2 justify-start items-center">
@@ -103,9 +130,43 @@ function Sidebar({ children, currentUser }: SidebarProps) {
                                 </IconButton>
                             </Tooltip>
 
-                            <IconButton size={"lg"} variant={"ghost"} isRound aria-label="userpopover-drawer">
-                                <Avatar variant={"outline"} size={"md"} name={currentUser.displayName || currentUser.email || undefined} src={currentUser.photoURL || undefined} />
-                            </IconButton>
+                            <Menu >
+                                <MenuButton as={IconButton} size={"md"} variant={"ghost"} isRound aria-label="userpopover-drawer">
+                                    <Avatar size={"sm"} name={currentUser.displayName || undefined} src={currentUser.photoURL || undefined} />
+
+                                </MenuButton>
+                                <MenuList className="">
+                                    <Box px={3} py={2} mb={4}>
+                                        <HStack alignItems={"center"}>
+                                            <Avatar size={"sm"} name={currentUser.displayName || undefined} src={currentUser.photoURL || undefined} />
+                                            <Box>
+                                                <Heading size={"md"} as={"h2"} fontSize={17}>{currentUser.displayName}</Heading>
+                                                <Text size={"sm"} fontSize={14}>{currentUser.email}</Text>
+
+                                            </Box>
+                                        </HStack>
+                                    </Box>
+                                    <MenuGroup title='Account' color={"darkblue"}>
+                                        <MenuItem>My Profile</MenuItem>
+                                        <MenuItem>Account Settings </MenuItem>
+
+                                    </MenuGroup>
+                                    <MenuDivider />
+                                    <MenuGroup title='Help' color={"darkblue"}>
+                                        <MenuItem>Help & Supports</MenuItem>
+                                        <MenuItem>Privacy & Policies</MenuItem>
+                                        <MenuItem>About <span className="mx-1 font-semibold">Diary Trail</span></MenuItem>
+
+                                    </MenuGroup>
+                                    <MenuDivider />
+                                    <MenuGroup title='Manage' color={"darkblue"}>
+                                        <MenuItem onClick={handleLogout} justifyContent={"center"} width={"90%"} mx={"auto"} _hover={{ filter: "brightness(0.9)" }} _active={{ filter: "brightness(1)" }} bgColor={"coral"} color={"white"}>
+                                            <span className="mr-3 text-diaryPrimaryText font-bold">Logout</span>
+                                            <LuLogOut className="text-diaryPrimaryText" />
+                                        </MenuItem>
+                                    </MenuGroup>
+                                </MenuList>
+                            </Menu>
                         </div>
                     </div>
                     <div className="h-fit w-full bg-transparent overflow-y-auto">

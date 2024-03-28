@@ -34,8 +34,8 @@ export function getSidebarLinks(pathname: string) {
     {
       Label: "friends",
       Icon: HiOutlineUserGroup,
-      To: "/profile",
-      isActive: pathname === "/profile",
+      To: "/friends",
+      isActive: pathname === "/friends",
     },
     {
       Label: "profile",

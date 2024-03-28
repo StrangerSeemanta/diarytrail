@@ -8,6 +8,8 @@ import DashboardLayout from "./pages/DashboardLayout"
 import { User, getAuth, onAuthStateChanged } from "firebase/auth"
 import { Box, Spinner } from "@chakra-ui/react"
 import ExploreDiaryPage from "./pages/ExploreDiaryPage"
+import ProfilePage from "./pages/ProfilePage"
+import { getUserDetails } from "./Modules/UserDetailsDB"
 export function HeadPolish({ children, title }: { children: ReactNode, title: string }) {
 
     useEffect(() => {
@@ -27,9 +29,11 @@ function Router() {
     useEffect(() => {
         const auth = getAuth();
         setGettingUser(true)
-        const updateUser = onAuthStateChanged(auth, (user) => {
+        const updateUser = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                setCurrentUser(user); setGettingUser(false)
+                await getUserDetails(user)
+                setCurrentUser(user);
+                setGettingUser(false)
 
 
             } else {
@@ -60,6 +64,13 @@ function Router() {
                                 <Route index element={
                                     <HeadPolish title="Discover latest diaries on Diary Trail">
                                         <ExploreDiaryPage />
+                                    </HeadPolish>
+                                } />
+
+                                {/* Profile */}
+                                <Route path="profile" element={
+                                    <HeadPolish title="Make An Attractive Presence On Diary Trail">
+                                        <ProfilePage />
                                     </HeadPolish>
                                 } />
 
@@ -101,18 +112,23 @@ function Router() {
                                             <SignupPage />
                                         </HeadPolish>
                                     } />
+
+                                <Route path="/*" element={
+                                    <HeadPolish title="Page Not Found - Diary Trail">
+                                        <Nopage />
+                                    </HeadPolish>
+                                } />
                             </>
                             )
                         )
                     }
 
-
-
                     <Route path="/*" element={
-                        <HeadPolish title="Page Not Found - Diary Trail">
-                            <Nopage />
-                        </HeadPolish>
-                    } />
+                        <Box className="h-screen w-full flex justify-center items-center">
+                            <Spinner size={"xl"} color="orange.500" label="Page Loading..." />
+                        </Box>} />
+
+
                 </Route>
             </Routes>
         </BrowserRouter>

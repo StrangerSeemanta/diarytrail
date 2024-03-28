@@ -3,10 +3,12 @@ import { MdLockOutline, MdOutlineMailOutline, MdOutlinePhone } from "react-icons
 import { RxEyeClosed, RxEyeOpen } from "react-icons/rx";
 import { Fragment } from "react/jsx-runtime";
 import { BiUser } from "react-icons/bi";
-import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { AuthError, createUserWithEmailAndPassword, getAuth, updateProfile } from "firebase/auth";
 import { FirebaseApp } from "../firebase/app_fiebase";
-import { Button, Input, InputGroup, InputLeftAddon, InputRightAddon, Select } from "@chakra-ui/react";
+import { Alert, AlertIcon, Button, Input, InputGroup, InputLeftAddon, InputRightAddon, Select, useToast } from "@chakra-ui/react";
 import Header from "../Components/Header";
+import { useNavigate } from "react-router";
+import { UserData, createUserDetailsDatabase } from "../Modules/UserDetailsDB";
 
 function SignupPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -16,18 +18,59 @@ function SignupPage() {
     const [passwordInput, setPasswordInput] = useState("");
     const [gender, setGender] = useState<string>('');
     const [isSiginingIn, setSigningIn] = useState(false);
-    const handleSignUp = (event: FormEvent) => {
+    const [signupError, setSignupError] = useState<string | null>(null); // State to hold signup error message
+    const toast = useToast({ position: "bottom-right", isClosable: true });
+    const navigateTo = useNavigate();
+
+    const handleSignUp = async (event: FormEvent) => {
         event.preventDefault();
         const auth = getAuth(FirebaseApp);
-        setSigningIn(true)
-        createUserWithEmailAndPassword(auth, emailInput, passwordInput)
-            .then(() => {
-                setSigningIn(false)
-            }).catch((e) => {
-                console.log(e);
-                setSigningIn(false)
-
+        setSigningIn(true);
+        const SignupPromise = createUserWithEmailAndPassword(auth, emailInput, passwordInput).then(async (userCreds) => {
+            const user = userCreds.user;
+            await updateProfile(user, {
+                displayName: nameInput
             })
+            // Create a document in the "userDetails" collection with user information
+            const userData: UserData = {
+                displayName: nameInput,
+                email: emailInput,
+                phoneNumber: phoneInput,
+                password: passwordInput,
+                gender: gender,
+                photoURL: null,
+
+                // Add any additional user data as needed
+            };
+            await createUserDetailsDatabase(user, userData)
+            setSigningIn(false);
+            navigateTo("/");
+
+        }).catch((err: AuthError) => {
+            const errMsg = err.message.split(':').slice(1).join("");
+            setSigningIn(false);
+            console.error(err);
+            setSignupError(errMsg);
+
+        })
+
+        toast.promise(SignupPromise, {
+            success: {
+                title: "Hooray! Account Created Successfully",
+                description: "Enjoy Your Journey!"
+            },
+            loading: {
+                title: "Creating Your Account",
+                description: "Keep Patience, We are making a place for you."
+            },
+            error: {
+                title: "Oopps, Failed To Create Account",
+                description: "Try Again! With Correct Informations."
+            }
+        })
+
+        // Set the document data
+
     }
     return (
         <Fragment>
@@ -39,6 +82,12 @@ function SignupPage() {
 
                     <div data-aos="fade-down" className=" w-full min-h-[80vh] flex flex-col gap-5 px-8 py-9 md:max-w-lg mx-auto shadow-large bg-gradient-to-t from-pink-200 to-diaryPrimaryText dark:from-diaryBlueText dark:to-black/30 md:dark:border dark:border-white/20 ">
                         <h1 className="text-3xl font-diaryQuickSand font-bold text-diaryAccentText dark:text-diaryPrimaryText">Create New Account </h1>
+                        {signupError && (
+                            <Alert status="error" borderRadius="md">
+                                <AlertIcon />
+                                {signupError}
+                            </Alert>
+                        )}
                         <form onSubmit={handleSignUp} autoComplete={"off"} className="flex h-fit flex-col gap-3 w-full">
 
                             <InputGroup>

@@ -7,40 +7,86 @@ import { Link, useNavigate } from "react-router-dom";
 import { GoogleAuthProvider, getAuth, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { getUser } from "../firebase/auth";
 import { FirebaseApp } from "../firebase/app_fiebase";
-import { Button, Input, InputGroup, InputLeftAddon, InputRightAddon } from "@chakra-ui/react";
+import { Button, Input, InputGroup, InputLeftAddon, InputRightAddon, useToast } from "@chakra-ui/react";
 import Header from "../Components/Header";
+import { UserData, createUserDetailsDatabase } from "../Modules/UserDetailsDB";
 function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [emailInput, setEmailInput] = useState("");
     const [passwordInput, setPasswordInput] = useState("");
     const [isLogging, setLogging] = useState(false);
     const [isInvalidInput, setIsInvalidInput] = useState(false);
+    const toast = useToast();
+    const navigate = useNavigate();
 
-    const navigate = useNavigate()
     const handleGoogleSignIn = () => {
+
+
         const auth = getAuth()
         signInWithPopup(auth, new GoogleAuthProvider())
-            .then(() => {
+            .then(async (userCreds) => {
+                const user = userCreds.user;
+                const userData: UserData = {
+                    displayName: user.displayName,
+                    email: user.email,
+                    phoneNumber: user.phoneNumber,
+                    photoURL: user.photoURL,
+                    password: null,
+                    gender: null,
+                    // Add any additional user data as needed
+                };
+                await createUserDetailsDatabase(user, userData)
+                toast({
+                    title: "Successfully Logged In",
+                    status: "success", position: "bottom-right"
+
+                })
                 navigate("/");
+
 
             })
             .catch((error) => {
                 console.log(error);
+                toast({
+                    title: "Error Occured!!",
+                    status: "error", position: "bottom-right"
+
+                })
             });
     }
     const handleEmailPasswordLogin = (event: FormEvent) => {
         event.preventDefault();
         setLogging(true);
         const auth = getAuth(FirebaseApp);
-        signInWithEmailAndPassword(auth, emailInput, passwordInput).then(() => {
+        signInWithEmailAndPassword(auth, emailInput, passwordInput).then(async (userCreds) => {
+            const user = userCreds.user;
+            const userData: UserData = {
+                displayName: user.displayName,
+                email: user.email,
+                phoneNumber: user.phoneNumber,
+                photoURL: user.photoURL,
+                password: passwordInput,
+                gender: null,
+                // Add any additional user data as needed
+            };
+            await createUserDetailsDatabase(user, userData)
             setLogging(false);
             setIsInvalidInput(false)
-
+            toast({
+                title: "Successfully Logged In",
+                status: "success",
+                position: "bottom-right"
+            })
             navigate('/')
         }).catch((reason) => {
             setLogging(false);
             console.error(reason);
-            setIsInvalidInput(true)
+            setIsInvalidInput(true); toast({
+                title: "Invalid Input. Check your Email & Password Again",
+                status: "error",
+                position: "bottom-right"
+
+            })
         })
     }
     useEffect(() => {
@@ -73,14 +119,14 @@ function LoginPage() {
                                 <InputLeftAddon>
                                     {<MdEmail size={20} />}
                                 </InputLeftAddon>
-                                <Input isInvalid={isInvalidInput} autoComplete="username" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} type="email" size="md" variant="outline" aria-label="email" placeholder="Enter Your Email" />
+                                <Input isInvalid={isInvalidInput} autoComplete="username" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} type="email" size="md" variant="outline" aria-label="email" placeholder="Enter Your Email" name="dt-login-email" />
 
                             </InputGroup>
                             <InputGroup>
                                 <InputLeftAddon>
                                     <MdLock size={20} />
                                 </InputLeftAddon>
-                                <Input isInvalid={isInvalidInput} autoComplete="current-password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} type={showPassword ? "text" : "password"} size="md" variant="outline" aria-label="password" placeholder="Enter Your Password" />
+                                <Input isInvalid={isInvalidInput} autoComplete="current-password" name="dt-login-password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} type={showPassword ? "text" : "password"} size="md" variant="outline" aria-label="password" placeholder="Enter Your Password" />
                                 <InputRightAddon>
                                     {
                                         <div onClick={() => setShowPassword((v) => !v)} className="cursor-pointer">
