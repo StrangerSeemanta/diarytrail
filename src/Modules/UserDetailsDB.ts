@@ -11,9 +11,10 @@ export interface UserData {
   email: string | null;
   phoneNumber: string | null;
   photoURL: string | null;
-  coverPhotoURL?: string;
   password: string | null;
   gender: string | null;
+  bio?: string;
+  coverPhotoURL?: string;
 }
 export async function createUserDetailsDatabase(
   user: User,
@@ -25,12 +26,17 @@ export async function createUserDetailsDatabase(
 
     // Create a document in the "userDetails" collection with user information
     const userDetailsRef = doc(db, "userDetails", uid);
+    const document = await getDoc(userDetailsRef);
 
-    await setDoc(userDetailsRef, {
-      ...userData,
-      provider: user.providerData[0].providerId,
-      uid: user.uid,
-    });
+    if (!document.exists()) {
+      await setDoc(userDetailsRef, {
+        ...userData,
+        provider: user.providerData[0].providerId,
+        uid: user.uid,
+      });
+    } else {
+      return;
+    }
   } catch (error) {
     throw new Error(`Can't Update User Database: ${error}`);
   }

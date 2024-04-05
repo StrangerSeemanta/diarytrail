@@ -1,10 +1,8 @@
-import { Avatar, Box, Center, Divider, HStack, Heading, IconButton, Input, InputGroup, InputLeftAddon, Menu, MenuButton, MenuDivider, MenuGroup, MenuItem, MenuList, Text, Tooltip, VStack, useToast } from "@chakra-ui/react";
-import Logo from "../assets/favicon.png"
+import { Avatar, Box, Center, HStack, Heading, IconButton, Input, InputGroup, InputLeftAddon, Menu, MenuButton, MenuDivider, MenuGroup, MenuItem, MenuList, Text, Tooltip, useToast } from "@chakra-ui/react";
 import { FormEvent, Fragment, ReactNode, useState, } from "react"
 import { IconType } from "react-icons";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { twMerge } from "tailwind-merge";
-import { getSidebarLinks } from "../Modules/SidebarLinks";
 import { Link } from "react-router-dom";
 import MobileSidebar from "./MobileSidebar";
 import { BiSearch } from "react-icons/bi";
@@ -43,7 +41,6 @@ interface SidebarProps {
     currentUser: User;
 }
 function Sidebar({ children, currentUser }: SidebarProps) {
-    const location = useLocation();
     const [searchVal, setSearchVal] = useState<string | number | readonly string[] | undefined>();
     const navigate = useNavigate();
     const toast = useToast();
@@ -79,96 +76,73 @@ function Sidebar({ children, currentUser }: SidebarProps) {
 
         <Fragment>
 
-            <MobileSidebar />
-            <div className="w-full min-h-[85vh] bg-diaryLightBlue flex px-2 ">
-                <div className="w-56 h-[85vh] overflow-y-auto cscroll  shadow-none rounded-md bg-transparent py-4 hidden lg:block">
-                    <HStack data-aos="zoom-in" px={3} py={4}>
-                        <Box className="w-8 ">
-                            <img className="select-none " src={Logo} />
-                        </Box>
-                        <Heading as={Link} to={"/"} size={"lg"} fontFamily={`"Clicker Script", 'cursive'`} fontWeight={700} className=" text-transparent bg-gradient-to-r from-black to-diaryAccentText  bg-clip-text">
-                            Diary Trail
-                        </Heading>
+            <HStack justifyContent={"space-between"} flexWrap={"wrap"}>
+                <MobileSidebar />
+                <div className="h-[15vh] py-7 px-2  flex justify-end items-center">
+                    <div className="p-2 w-fit h-fit bg-white shadow-customized rounded-full flex gap-2 justify-start items-center">
+                        <form onSubmit={handleSearch} method="GET">
+                            <InputGroup isTruncated bgColor={"rgb(244, 247, 254)"} borderRadius={"9999px"}>
+                                <InputLeftAddon border={"none"}>
+                                    <BiSearch className="text-gray-800/50" />
+                                </InputLeftAddon>
+                                <Input value={searchVal} onChange={(e) => setSearchVal(e.target.value)} name="dtsearch" id="dtsearch" type="search" aria-label="dtsearch-bar" variant={"filled"} sx={{ border: "none" }} placeholder="Search..." />
+                            </InputGroup>
+                        </form>
+                        <Tooltip label="Notifiactions" placement="top" hasArrow>
+                            <IconButton size={"sm"} variant={"ghost"} isRound aria-label="notifiaction-drawer">
+                                <IoMdNotificationsOutline size={21} />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip label="conversations" placement="top" hasArrow>
+                            <IconButton onClick={() => navigate("messages")} size={"sm"} variant={"ghost"} isRound aria-label="conversation-drawer">
+                                <BsChatDots size={19} />
+                            </IconButton>
+                        </Tooltip>
 
-                    </HStack>
+                        <Menu >
+                            <MenuButton as={IconButton} size={"md"} variant={"ghost"} isRound aria-label="userpopover-drawer">
+                                <Avatar size={"sm"} name={currentUser.displayName || undefined} src={currentUser.photoURL || undefined} />
 
-                    <Box px={5} mb={3}>
-                        <Divider borderBottom={"2px solid coral"} />
+                            </MenuButton>
+                            <MenuList className="">
+                                <Box px={3} py={2} mb={4}>
+                                    <HStack alignItems={"center"}>
+                                        <Avatar size={"sm"} name={currentUser.displayName || undefined} src={currentUser.photoURL || undefined} />
+                                        <Box>
+                                            <Heading size={"md"} as={"h2"} fontSize={17}>{currentUser.displayName}</Heading>
+                                            <Text size={"sm"} fontSize={14}>{currentUser.email}</Text>
 
-                    </Box>
-                    <VStack>
-                        {
-                            getSidebarLinks(location.pathname).map((props, keys) => (
-                                <SidebarItemButton key={String(keys) + props.Label} idx={keys} {...props} />
-                            ))
-                        }
+                                        </Box>
+                                    </HStack>
+                                </Box>
+                                <MenuGroup title='Account' color={"darkblue"}>
+                                    <MenuItem as={Link} to={"/profile"}>My Profile</MenuItem>
+                                    <MenuItem as={Link} to={"/settings"}>Account Settings </MenuItem>
 
-                    </VStack>
+                                </MenuGroup>
+                                <MenuDivider />
+                                <MenuGroup title='Help' color={"darkblue"}>
+                                    <MenuItem as={Link} to={"/supports"}>Help & Supports</MenuItem>
+                                    <MenuItem as={Link} to={"/policies"}>Privacy & Policies</MenuItem>
 
-
+                                </MenuGroup>
+                                <MenuDivider />
+                                <MenuGroup title='Manage' color={"darkblue"}>
+                                    <MenuItem onClick={handleLogout} justifyContent={"center"} width={"90%"} mx={"auto"} _hover={{ filter: "brightness(0.9)" }} _active={{ filter: "brightness(1)" }} bgColor={"coral"} color={"white"}>
+                                        <span className="mr-3 text-diaryPrimaryText font-bold">Logout</span>
+                                        <LuLogOut className="text-diaryPrimaryText" />
+                                    </MenuItem>
+                                </MenuGroup>
+                            </MenuList>
+                        </Menu>
+                    </div>
                 </div>
+            </HStack>
+            <div className="w-full min-h-[85vh] bg-diaryLightBlue flex px-2 ">
+
                 <div className={twMerge("min-h-screen relative flex-1 overflow-y-auto py-2")}>
                     {/* Top Nav */}
-                    <div className="h-[15vh] py-7 px-2 w-full flex justify-end items-center">
-                        <div className="p-2 w-fit h-fit bg-white shadow-customized rounded-full flex gap-2 justify-start items-center">
-                            <form onSubmit={handleSearch} method="GET">
-                                <InputGroup isTruncated bgColor={"rgb(244, 247, 254)"} borderRadius={"9999px"}>
-                                    <InputLeftAddon border={"none"}>
-                                        <BiSearch className="text-gray-800/50" />
-                                    </InputLeftAddon>
-                                    <Input value={searchVal} onChange={(e) => setSearchVal(e.target.value)} name="dtsearch" id="dtsearch" type="search" aria-label="dtsearch-bar" variant={"filled"} sx={{ border: "none" }} placeholder="Search..." />
-                                </InputGroup>
-                            </form>
-                            <Tooltip label="Notifiactions" placement="top" hasArrow>
-                                <IconButton size={"sm"} variant={"ghost"} isRound aria-label="notifiaction-drawer">
-                                    <IoMdNotificationsOutline size={21} />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip label="conversations" placement="top" hasArrow>
-                                <IconButton size={"sm"} variant={"ghost"} isRound aria-label="conversation-drawer">
-                                    <BsChatDots size={19} />
-                                </IconButton>
-                            </Tooltip>
 
-                            <Menu >
-                                <MenuButton as={IconButton} size={"md"} variant={"ghost"} isRound aria-label="userpopover-drawer">
-                                    <Avatar size={"sm"} name={currentUser.displayName || undefined} src={currentUser.photoURL || undefined} />
-
-                                </MenuButton>
-                                <MenuList className="">
-                                    <Box px={3} py={2} mb={4}>
-                                        <HStack alignItems={"center"}>
-                                            <Avatar size={"sm"} name={currentUser.displayName || undefined} src={currentUser.photoURL || undefined} />
-                                            <Box>
-                                                <Heading size={"md"} as={"h2"} fontSize={17}>{currentUser.displayName}</Heading>
-                                                <Text size={"sm"} fontSize={14}>{currentUser.email}</Text>
-
-                                            </Box>
-                                        </HStack>
-                                    </Box>
-                                    <MenuGroup title='Account' color={"darkblue"}>
-                                        <MenuItem>My Profile</MenuItem>
-                                        <MenuItem>Account Settings </MenuItem>
-
-                                    </MenuGroup>
-                                    <MenuDivider />
-                                    <MenuGroup title='Help' color={"darkblue"}>
-                                        <MenuItem>Help & Supports</MenuItem>
-                                        <MenuItem>Privacy & Policies</MenuItem>
-                                        <MenuItem>About <span className="mx-1 font-semibold">Diary Trail</span></MenuItem>
-
-                                    </MenuGroup>
-                                    <MenuDivider />
-                                    <MenuGroup title='Manage' color={"darkblue"}>
-                                        <MenuItem onClick={handleLogout} justifyContent={"center"} width={"90%"} mx={"auto"} _hover={{ filter: "brightness(0.9)" }} _active={{ filter: "brightness(1)" }} bgColor={"coral"} color={"white"}>
-                                            <span className="mr-3 text-diaryPrimaryText font-bold">Logout</span>
-                                            <LuLogOut className="text-diaryPrimaryText" />
-                                        </MenuItem>
-                                    </MenuGroup>
-                                </MenuList>
-                            </Menu>
-                        </div>
-                    </div>
                     <div className="h-fit w-full bg-transparent overflow-y-auto">
                         {children}
                     </div>

@@ -1,32 +1,22 @@
-import { Avatar, Box, Button, CircularProgress, CircularProgressLabel, Flex, Heading, Image, Modal, ModalBody, ModalCloseButton, ModalContent, ModalHeader, ModalOverlay, Spinner, Text, useDisclosure, useToast } from "@chakra-ui/react";
+import { Avatar, Box, Flex, Heading, IconButton, Spinner, Text, useToast } from "@chakra-ui/react";
 import { User, getAuth, onAuthStateChanged, updateProfile } from "firebase/auth";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { BiCamera, BiEdit } from "react-icons/bi";
 import { UserData, getUserDetails, updateUserDetailsField } from "../Modules/UserDetailsDB";
-import { CgAdd } from "react-icons/cg";
-import { getDownloadURL, getStorage, ref, uploadBytesResumable } from "firebase/storage";
-import { FirebaseApp } from "../firebase/app_fiebase";
-import formatBytes from "../Modules/FomartBytes";
+
 import PhotoViewer from "../Components/PhotoViewer";
+import { CiEdit } from "react-icons/ci";
+import BioForm from "../Components/BioForm";
+import FileUpload from "../Components/FileUpload";
 
 const ProfilePage = () => {
+    const [isEditBio, setEditBio] = useState(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [userDetails, setUserDetails] = useState<UserData | null>(null)
     const [isGettingUser, setGettingUser] = useState<boolean>(true);
-    const fileInput = useRef<HTMLInputElement>(null);
-    const [selectedFileName, setSelectedFileName] = useState<string>("");
-    const [isUploading, setIsUploading] = useState(false);
-    const [uploadingValue, setUploadingValue] = useState(0);
-    const [uploadingDetails, setUploadingDetails] = useState<string>("0");
-    const coverfileInput = useRef<HTMLInputElement>(null);
-    const [isFinishing, setIsFinishing] = useState(false);
-    const [selectedCoverFileName, setSelectedCoverFileName] = useState<string>("");
-    const [isCoverUploading, setIsCoverUploading] = useState(false);
-    const [CoverUploadingValue, setCoverUploadingValue] = useState(0);
-    const [CoverUploadingDetails, setCoverUploadingDetails] = useState<string>("0");
+
+
     const toast = useToast({ position: "bottom-right", isClosable: false })
-    const { isOpen: isOpenProfileModal, onOpen: onOpenProfileModal, onClose: onCloseProfileModal } = useDisclosure()
-    const { isOpen: isOpenCoverModal, onOpen: onOpenCoverModal, onClose: onCloseCoverModal } = useDisclosure()
 
     useEffect(() => {
         const auth = getAuth();
@@ -36,7 +26,6 @@ const ProfilePage = () => {
                 setCurrentUser(user);
                 const details = await getUserDetails(user);
                 setUserDetails(details);
-                console.log(details);
 
                 setGettingUser(false)
 
@@ -49,125 +38,45 @@ const ProfilePage = () => {
         return () => updateUser();
     }, []);
 
-    const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && event.target.files.length > 0) {
-            setSelectedFileName(event.target.files[0].name);
-        } else {
-            setSelectedFileName("");
+
+    const handleProfilePicUploadComplete = async (downloadUrl: string) => {
+        if (currentUser) {
+            await updateProfile(currentUser, {
+                photoURL: downloadUrl
+            });
+            await updateUserDetailsField(currentUser, {
+                fieldName: "photoURL",
+                newValue: downloadUrl
+            });
+            const newDetails = await getUserDetails(currentUser)
+            setUserDetails(newDetails)
         }
-    };
-    const handleCoverPhotoUpload = async () => {
-        if (currentUser && coverfileInput.current?.files && coverfileInput.current.files.length > 0 && selectedCoverFileName.length > 0) {
-            setIsCoverUploading(true);
-            const storage = getStorage(FirebaseApp);
-            const file = coverfileInput.current.files[0];
-            const url = `storage/${currentUser.uid}/coverPic/${file.name}`;
-            const storeRef = ref(storage, url);
-
-            // Upload the file
-            const uploadTask = uploadBytesResumable(storeRef, file);
-
-            // Listen for state changes and progress
-            uploadTask.on("state_changed",
-                (snapshot) => {
-                    // Get upload progress
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    setCoverUploadingValue(progress);
-                    setCoverUploadingDetails(`Uploaded ${formatBytes(snapshot.bytesTransferred)} of ${formatBytes(snapshot.totalBytes)} `)
-                },
-                (error) => {
-                    // Handle unsuccessful uploads
-                    console.error("Error uploading file: ", error);
-                    setIsCoverUploading(false);
-
-                    toast({
-                        status: "error",
-                        title: "Upload Failed, Try Again"
-                    })
-                },
-                async () => {
-                    // Handle successful uploads
-                    const downloadUrl = await getDownloadURL(storeRef);
-                    await updateUserDetailsField(currentUser, {
-                        fieldName: "coverPhotoURL",
-                        newValue: downloadUrl
-                    })
-                    setIsCoverUploading(false);
-                    toast({
-                        status: "success",
-                        title: "Really Nice! ", description: "Your New Cover Photo Updated"
-                    })
-                    setSelectedCoverFileName("");
-                    onCloseCoverModal()
-                    // await fetchPhotos();
-                }
-            );
-        } else {
+        else {
             toast({
                 status: "error",
-                title: "No File Selected", description: "Select An Image File "
+                title: "Something Error Happened"
             })
         }
     };
-    const handleUploadFile = async () => {
-        if (currentUser && fileInput.current?.files && fileInput.current.files.length > 0 && selectedFileName.length > 0) {
-            setIsUploading(true);
-            setIsFinishing(false)
-            const storage = getStorage(FirebaseApp);
-            const file = fileInput.current.files[0];
-            const url = `storage/${currentUser.uid}/profilePic/${file.name}`;
-            const storeRef = ref(storage, url);
 
-            // Upload the file
-            const uploadTask = uploadBytesResumable(storeRef, file);
+    const handleCoverPhotoUploadComplete = async (downloadUrl: string) => {
 
-            // Listen for state changes and progress
-            uploadTask.on("state_changed",
-                (snapshot) => {
-                    // Get upload progress
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    setUploadingValue(progress);
-                    setUploadingDetails(`Uploaded ${formatBytes(snapshot.bytesTransferred)} of ${formatBytes(snapshot.totalBytes)} `)
-                },
-                (error) => {
-                    // Handle unsuccessful uploads
-                    console.error("Error uploading file: ", error);
-                    setIsUploading(false);
-
-                    toast({
-                        status: "error",
-                        title: "Upload Failed, Try Again"
-                    })
-                },
-                async () => {
-                    // Handle successful uploads
-                    setIsFinishing(true)
-
-                    const downloadUrl = await getDownloadURL(storeRef);
-                    await updateProfile(currentUser, {
-                        photoURL: downloadUrl
-                    })
-                    await updateUserDetailsField(currentUser, {
-                        fieldName: "photoURL",
-                        newValue: downloadUrl
-                    })
-                    setIsUploading(false);
-                    toast({
-                        status: "success",
-                        title: "Looking Great! ", description: "Your New Profile Photo Updated"
-                    })
-                    setSelectedFileName("");
-                    onCloseProfileModal()
-                    // await fetchPhotos();
-                }
-            );
+        if (currentUser) {
+            await updateUserDetailsField(currentUser, {
+                fieldName: "coverPhotoURL",
+                newValue: downloadUrl
+            });
+            const newDetails = await getUserDetails(currentUser)
+            setUserDetails(newDetails)
         } else {
             toast({
                 status: "error",
-                title: "No File Selected", description: "Select An Image File "
+                title: "Something Error Happened"
             })
         }
     };
+
+
     return (
         <Fragment>
             {isGettingUser ?
@@ -191,22 +100,24 @@ const ProfilePage = () => {
                             <Text>We recommend you to logout and login Again</Text>
                         </Flex> : (
                             <Fragment>
-                                <Flex direction="column" align="center" justify="start" h="100vh" p={3}>
+                                <Flex bgColor={"white"} my={2} direction="column" align="center" justify="start" minH="100vh" w={"95%"} mx={"auto"} className="rounded-2xl overflow-x-hidden shadow-customized">
                                     <div className="relative w-full h-fit ">
                                         <PhotoViewer src={userDetails.coverPhotoURL || "https://via.placeholder.com/1500x500"}>
-                                            <Image
+                                            <img
                                                 src={userDetails.coverPhotoURL || "https://via.placeholder.com/1500x500"}
                                                 alt="Cover Image"
-                                                w="100%"
-                                                h="200px"
-                                                objectFit="cover"
+
+                                                className="object-cover w-full h-[200px]"
                                             />
                                         </PhotoViewer>
-                                        <div onClick={onOpenCoverModal} className="absolute bottom-3 right-2">
-                                            <div className=" rounded-full group transition-all flex gap-2 items-center justify-between text-diaryPrimaryText font-bold bg-diaryBlueText cursor-pointer hover:opacity-80 w-fit p-2">
-                                                <span> <BiEdit size={18} /></span>
+
+                                        <FileUpload _dbf="coverPic" onComplete={handleCoverPhotoUploadComplete} currentUser={currentUser} trigger={
+                                            <div className="absolute bottom-3 right-2 rounded-full">
+                                                <div className=" rounded-full group transition-all flex gap-2 items-center justify-between text-diaryPrimaryText font-bold bg-diaryBlueText cursor-pointer hover:opacity-80 w-fit p-2">
+                                                    <span> <BiEdit size={18} /></span>
+                                                </div>
                                             </div>
-                                        </div>
+                                        } />
                                     </div>
                                     <div className="relative ">
                                         <PhotoViewer src={currentUser.photoURL || undefined}
@@ -220,96 +131,83 @@ const ProfilePage = () => {
                                                 shadow="lg"
                                             />
                                         </PhotoViewer>
-                                        <div onClick={onOpenProfileModal} className="absolute -bottom-1 right-0">
-                                            <div className="rounded-full  flex gap-2 items-center p-1 text-diaryPrimaryText font-bold bg-diaryBlueText cursor-pointer hover:opacity-80 w-fit">
-                                                <BiCamera size={18} />
+                                        <FileUpload _dbf="profilePic" onComplete={handleProfilePicUploadComplete} currentUser={currentUser} trigger={
+                                            <div className="absolute -bottom-1 right-0">
+                                                <div className="rounded-full  flex gap-2 items-center p-1 text-diaryPrimaryText font-bold bg-diaryBlueText cursor-pointer hover:opacity-80 w-fit">
+                                                    <BiCamera size={18} />
+                                                </div>
                                             </div>
-                                        </div>
+                                        } />
                                     </div>
-                                    <Box mt="4">
-                                        <Heading as="h1" size="lg">
-                                            {userDetails.displayName}
-                                        </Heading>
-                                        <Text mt="2" color="gray.600">
-                                            {userDetails.email}
-                                        </Text>
-                                        <Text mt="4" fontSize="md">
-                                            Bio: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                                            gravida nisi ut magna vestibulum, nec varius lectus ullamcorper.
-                                            Donec elementum justo et magna euismod, in commodo elit maximus.
-                                        </Text>
-                                        <Text mt="2" fontSize="md">
-                                            Location: New York City, USA
-                                        </Text>
-                                        <Text mt="2" fontSize="md">
-                                            Interests: Traveling, Photography, Coding
-                                        </Text>
+                                    <Box mt="4" w={"100%"} height={"100%"}>
+                                        <Box bgColor={"white"} className="flex flex-col items-center justify-center gap-1 text-center rounded-2xl w-full" py={4} px={8}>
+                                            <Heading as="h1" size="lg" textAlign={"center"} fontFamily={"inherit"}>
+                                                {userDetails.displayName}
+                                            </Heading>
+                                            <Text color="gray.600">
+                                                {userDetails.email}
+                                            </Text>
+                                            <Box fontSize="md" mt={4} p={3} display={"flex"} justifyContent={"center"} alignItems={"end"} borderStyle={"solid"} borderColor={"#1f1f1f1f"}>
+                                                {userDetails.bio ? (!isEditBio &&
+
+                                                    <Text textAlign={"center"} className="whitespace-pre-wrap">{userDetails.bio}</Text>
+                                                ) : (
+                                                    <Text>Update Your Bio</Text>
+                                                )}
+
+
+                                                {
+                                                    isEditBio ?
+                                                        <BioForm currentUser={currentUser} onCancel={() => setEditBio(false)} />
+                                                        :
+                                                        <Flex gap={2} alignItems={"center"} justifyContent={"end"}>
+
+                                                            <IconButton
+                                                                onClick={() => setEditBio(true)}
+                                                                className="shadow-customized"
+                                                                size={"sm"}
+                                                                isRound
+                                                                variant={"ghost"}
+                                                                aria-label="bio-edit-btn"
+                                                            >
+                                                                <CiEdit size={20} />
+                                                            </IconButton>
+                                                        </Flex>
+                                                }
+
+                                            </Box>
+
+                                        </Box>
+                                        <div className="mx-auto mt-4 mb-5 grid max-w-[23rem] grid-cols-3 rounded-md border-2 border-gray-100  py-4 shadow-md  dark:bg-[#37404F]">
+                                            <div className="flex flex-col items-center justify-center gap-1 border-r-2  px-4  sm:flex-row">
+                                                <span className="font-extrabold text-foreground">
+                                                    0
+                                                </span>
+                                                <span className="text-sm">Diaries</span>
+                                            </div>
+                                            <div className="flex flex-col items-center justify-center gap-1 border-r-2  px-4  sm:flex-row">
+                                                <span className="font-extrabold text-foreground">
+                                                    0
+                                                </span>
+                                                <span className="text-sm">Following</span>
+                                            </div>
+                                            <div className="flex flex-col items-center justify-center gap-1  px-4  sm:flex-row">
+                                                <span className="font-extrabold text-foreground">
+                                                    0
+                                                </span>
+                                                <span className="text-sm">Follower</span>
+                                            </div>
+
+                                        </div>
                                     </Box>
                                 </Flex>
 
-                                <Modal isCentered isOpen={isOpenProfileModal} onClose={onCloseProfileModal}>
-                                    <ModalOverlay />
-                                    <ModalContent>
-                                        <ModalHeader>Upload Profile Picture</ModalHeader>
-                                        <ModalCloseButton />
-                                        <ModalBody>
-                                            <div className="w-full h-[20vh] flex flex-col gap-3 justify-center items-center">
-                                                {isUploading ?
-                                                    <>
-                                                        <CircularProgress isIndeterminate={isFinishing} value={uploadingValue} color='green.400'>
-                                                            <CircularProgressLabel>{`${Math.floor(Math.round(uploadingValue))}%`}</CircularProgressLabel>
-                                                        </CircularProgress>
-                                                        <Text>{isFinishing ? "Finishing Touches" : uploadingDetails}</Text>
-                                                    </> :
-                                                    <>
-                                                        <label htmlFor="profile-photo" className="rounded-full  flex gap-2 items-center p-3 text-diaryAccentText font-bold bg-transparent cursor-pointer hover:opacity-80 w-fit">
-                                                            {selectedFileName ?
-                                                                <Text>{selectedFileName}</Text>
-                                                                : <CgAdd size={40} />}
-                                                        </label>
-                                                        <input ref={fileInput} onChange={handleFileInputChange} type="file" className="hidden" id="profile-photo" name="profile-photo" aria-label="profile-photo" />
-                                                        <Button onClick={handleUploadFile} colorScheme="facebook">
-                                                            Upload
-                                                        </Button>
-                                                    </>
-                                                }
-                                            </div>
-                                        </ModalBody>
-                                    </ModalContent></Modal>
 
-                                <Modal isCentered isOpen={isOpenCoverModal} onClose={onCloseCoverModal}>
-                                    <ModalOverlay />
-                                    <ModalContent>
-                                        <ModalHeader>Upload Cover Picture</ModalHeader>
-                                        <ModalCloseButton />
-                                        <ModalBody>
-                                            <div className="w-full h-[20vh] flex flex-col gap-3 justify-center items-center">
-                                                {isCoverUploading ?
-                                                    <>
-                                                        <CircularProgress value={CoverUploadingValue} color='green.400'>
-                                                            <CircularProgressLabel>{`${Math.floor(Math.round(CoverUploadingValue))}%`}</CircularProgressLabel>
-                                                        </CircularProgress>
-                                                        <Text>{CoverUploadingDetails}</Text>
-                                                    </> :
-                                                    <>
-                                                        <label htmlFor="cover-photo" className="rounded-full  flex gap-2 items-center p-3 text-diaryAccentText font-bold bg-transparent cursor-pointer hover:opacity-80 w-fit">
-                                                            {selectedCoverFileName ?
-                                                                <Text>{selectedCoverFileName}</Text>
-                                                                : <CgAdd size={40} />}
-                                                        </label>
-                                                        <input ref={coverfileInput} onChange={(e) => { if (e.target.files && e.target.files.length > 0) { setSelectedCoverFileName(e.target.files[0].name) } }} type="file" className="hidden" id="cover-photo" name="cover-photo" aria-label="cover-photo" />
-                                                        <Button onClick={handleCoverPhotoUpload} colorScheme="facebook">
-                                                            Upload
-                                                        </Button>
-                                                    </>
-                                                }
-                                            </div>
-                                        </ModalBody>
-                                    </ModalContent></Modal>
+
                             </Fragment>
                         )
             }
-        </Fragment>
+        </Fragment >
     );
 };
 

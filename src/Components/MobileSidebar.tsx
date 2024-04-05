@@ -21,11 +21,14 @@ function MobileSidebar() {
 
     return (
         <>
-            <HStack height={'10vh'} py={3} px={5} justifyContent={"start"} alignItems={"center"} display={{ lg: "none" }}>
-                <Box mr={2} className="lg:hidden">
+            <HStack display={"inline-flex"} height={'10vh'} py={3} px={5} justifyContent={"start"} alignItems={"center"} >
+                <Box mr={2} className="flex items-center gap-3 ">
                     <IconButton aria-label="toggle-menu" variant={"ghost"} onClick={onOpen}>
                         <AiOutlineMenu size={24} />
                     </IconButton>
+                    <Heading as={Link} to={"/"} size={"xl"} fontFamily={`"Clicker Script", 'cursive'`} fontWeight={700} className=" text-transparent bg-gradient-to-r from-black to-diaryAccentText  bg-clip-text">
+                        Diary Trail
+                    </Heading>
                     <Drawer
                         isOpen={isOpen}
                         placement='left'
@@ -44,7 +47,7 @@ function MobileSidebar() {
                                 </Heading></DrawerHeader>
 
                             <DrawerBody className="cscroll">
-                                <div className="w-full min-h-[85vh] overflow-y-auto cscroll  shadow-none rounded-md bg-transparent py-4 lg:hidden ">
+                                <div className="w-full min-h-[85vh] overflow-y-auto cscroll  shadow-none rounded-md bg-transparent py-4  ">
                                     <VStack>
                                         {
                                             getSidebarLinks(location.pathname).map((props, keys) => (
