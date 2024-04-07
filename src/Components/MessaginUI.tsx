@@ -6,7 +6,6 @@ import { Conversation, getConversationForUser, listenToNewMessages } from "../Mo
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { base64Encode } from "../Modules/tokenize";
 import { twMerge } from "tailwind-merge";
-import SFX from "./../assets/pop.mp3"
 interface inboxListItemProps extends HTMLAttributes<HTMLDivElement> {
     isActive: boolean;
     data: UserData_public;
@@ -31,8 +30,7 @@ const InboxListItem = forwardRef<HTMLDivElement, inboxListItemProps>(({ currentU
             await listenToNewMessages(currentUserDetails.dtid, data.dtid, (newMessage) => {
                 if (lastMsg !== newMessage[newMessage.length - 1]) {
                     setLastMsg(newMessage[newMessage.length - 1]);
-                    const audio = new Audio(SFX);
-                    audio.play();
+
                 }
             }, (err => console.error(err)));
         }
