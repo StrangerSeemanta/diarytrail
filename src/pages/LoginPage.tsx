@@ -10,6 +10,7 @@ import { FirebaseApp } from "../firebase/app_fiebase";
 import { Button, Input, InputGroup, InputLeftAddon, InputRightAddon, useToast } from "@chakra-ui/react";
 import Header from "../Components/Header";
 import { UserData, createUserDetailsDatabase } from "../Modules/UserDetailsDB";
+import { base64Encode } from "../Modules/tokenize";
 function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [emailInput, setEmailInput] = useState("");
@@ -33,6 +34,7 @@ function LoginPage() {
                     photoURL: user.photoURL,
                     password: null,
                     gender: null,
+                    dtid: base64Encode(userCreds.user.uid)
                     // Add any additional user data as needed
                 };
                 await createUserDetailsDatabase(user, userData)
@@ -67,9 +69,11 @@ function LoginPage() {
                 photoURL: user.photoURL,
                 password: passwordInput,
                 gender: null,
+                dtid: base64Encode(user.uid),
                 // Add any additional user data as needed
             };
-            await createUserDetailsDatabase(user, userData)
+            await createUserDetailsDatabase(user, userData);
+
             setLogging(false);
             setIsInvalidInput(false)
             toast({

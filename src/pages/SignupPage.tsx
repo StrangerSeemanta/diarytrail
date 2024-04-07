@@ -9,6 +9,7 @@ import { Alert, AlertIcon, Button, Input, InputGroup, InputLeftAddon, InputRight
 import Header from "../Components/Header";
 import { useNavigate } from "react-router";
 import { UserData, createUserDetailsDatabase } from "../Modules/UserDetailsDB";
+import { base64Encode } from "../Modules/tokenize";
 
 function SignupPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +40,7 @@ function SignupPage() {
                 password: passwordInput,
                 gender: gender,
                 photoURL: null,
-
+                dtid: base64Encode(user.uid),
                 // Add any additional user data as needed
             };
             await createUserDetailsDatabase(user, userData)

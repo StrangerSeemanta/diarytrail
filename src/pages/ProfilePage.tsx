@@ -8,6 +8,8 @@ import PhotoViewer from "../Components/PhotoViewer";
 import { CiEdit } from "react-icons/ci";
 import BioForm from "../Components/BioForm";
 import FileUpload from "../Components/FileUpload";
+import { update_public_userData } from "../Modules/Public_UserDataDB";
+import { base64Encode } from "../Modules/tokenize";
 
 const ProfilePage = () => {
     const [isEditBio, setEditBio] = useState(false);
@@ -45,6 +47,10 @@ const ProfilePage = () => {
                 photoURL: downloadUrl
             });
             await updateUserDetailsField(currentUser, {
+                fieldName: "photoURL",
+                newValue: downloadUrl
+            });
+            await update_public_userData(base64Encode(currentUser.uid), {
                 fieldName: "photoURL",
                 newValue: downloadUrl
             });

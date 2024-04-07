@@ -6,6 +6,9 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
+import { base64Encode } from "./tokenize";
+import { UserData_public } from "./Public_UserDataDB";
+
 export interface UserData {
   displayName: string | null;
   email: string | null;
@@ -15,6 +18,7 @@ export interface UserData {
   gender: string | null;
   bio?: string;
   coverPhotoURL?: string;
+  dtid: string;
 }
 export async function createUserDetailsDatabase(
   user: User,
@@ -23,22 +27,35 @@ export async function createUserDetailsDatabase(
   try {
     const db = getFirestore();
     const uid = user.uid;
-
+    const dt_token = base64Encode(uid);
     // Create a document in the "userDetails" collection with user information
     const userDetailsRef = doc(db, "userDetails", uid);
-    const document = await getDoc(userDetailsRef);
+    const usersDBREF = doc(db, "users", dt_token); // for public uses
 
-    if (!document.exists()) {
+    const documentUserDetails = await getDoc(userDetailsRef);
+    const docUsersDb = await getDoc(usersDBREF);
+    const public_userData: UserData_public = {
+      displayName: user.displayName,
+      email: user.email,
+      photoURL: user.photoURL,
+      dtid: dt_token,
+    };
+    if (!documentUserDetails.exists()) {
       await setDoc(userDetailsRef, {
         ...userData,
         provider: user.providerData[0].providerId,
         uid: user.uid,
+        dtid: dt_token,
       });
-    } else {
-      return;
     }
+
+    if (!docUsersDb.exists()) {
+      await setDoc(usersDBREF, public_userData);
+    }
+
+    // Update Auth.User.Token.dtid
   } catch (error) {
-    throw new Error(`Can't Update User Database: ${error}`);
+    throw new Error(`Can't Update User Details Database: ${error}`);
   }
 }
 

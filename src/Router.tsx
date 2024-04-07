@@ -10,6 +10,8 @@ import { Box, Spinner } from "@chakra-ui/react"
 import ExploreDiaryPage from "./pages/ExploreDiaryPage"
 import ProfilePage from "./pages/ProfilePage"
 import { getUserDetails } from "./Modules/UserDetailsDB"
+import MessengerPage from "./pages/MessengerPage"
+import Messenger from "./Components/Messenger"
 export function HeadPolish({ children, title }: { children: ReactNode, title: string }) {
 
     useEffect(() => {
@@ -73,7 +75,20 @@ function Router() {
                                         <ProfilePage />
                                     </HeadPolish>
                                 } />
-
+                                <Route path="messages" element={<MessengerPage />}>
+                                    <Route index element={
+                                        <HeadPolish title="Chat With Our Friends - Diary Trail">
+                                            <div className='h-[80vh] w-full flex items-center justify-center'>
+                                                <h1 className='text-3xl font-bold text-gray-500'>Select A message</h1>
+                                            </div>
+                                        </HeadPolish>
+                                    } />
+                                    <Route path=":msgWith" element={
+                                        <HeadPolish title="Chat With Our Friends - Diary Trail">
+                                            <Messenger />
+                                        </HeadPolish>
+                                    } />
+                                </Route>
                                 {/* No page for dashboard links */}
 
                                 <Route path="/*" element={

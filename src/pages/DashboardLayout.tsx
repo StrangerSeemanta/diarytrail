@@ -9,7 +9,7 @@ function DashboardLayout({ userDetails }: DashboardLayoutProps) {
     return (
         <>
             <Sidebar currentUser={userDetails}>
-                <div className="bg-red h-fit w-full p-3">
+                <div className="bg-transparent h-fit w-full p-3">
                     <Outlet />
                 </div>
             </Sidebar>

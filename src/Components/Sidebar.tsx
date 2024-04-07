@@ -43,7 +43,7 @@ interface SidebarProps {
 function Sidebar({ children, currentUser }: SidebarProps) {
     const [searchVal, setSearchVal] = useState<string | number | readonly string[] | undefined>();
     const navigate = useNavigate();
-    const toast = useToast();
+    const toast = useToast({ isClosable: true });
     const handleSearch = (event: FormEvent) => {
         event.preventDefault();
     }
@@ -55,19 +55,16 @@ function Sidebar({ children, currentUser }: SidebarProps) {
             loading: {
                 title: "Logging Out",
                 description: "Please wait...",
-                isClosable: false,
                 position: "bottom-right"
             },
             success: {
                 title: "Successfully Logged Out",
                 description: "You have logged out from Diarytrail ",
-                isClosable: false,
                 position: "bottom-right"
             },
             error: {
                 title: "Failed To Log Out",
                 description: "Something Error Occured! Try again.",
-                isClosable: false,
                 position: "bottom-right"
             }
         })
