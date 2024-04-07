@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   getFirestore,
+  onSnapshot,
   or,
   query,
   runTransaction,
@@ -19,6 +20,7 @@ const db = getFirestore(FirebaseApp);
 export interface Message {
   text: string;
   sender: UserData_public;
+  timestamp: Date;
 }
 export interface Conversation {
   conversationId: string;
@@ -32,11 +34,7 @@ export interface Conversation {
     sender: UserData_public;
     receiver: UserData_public;
   };
-  lastMessage: {
-    sentBy: UserData_public; // ID of the sender of the last message
-    message: string; // Content of the last message
-    timestamp: Date; // Timestamp of when the last message was sent
-  };
+  lastMessage: Message;
   messages: Message[];
 }
 
@@ -70,8 +68,8 @@ export async function createRoom(
       },
 
       lastMessage: {
-        sentBy: sender,
-        message: lastMsg,
+        sender: sender,
+        text: lastMsg,
         timestamp: new Date(),
       },
       messages: [],
@@ -150,8 +148,8 @@ export async function updateLastMessage(
 
     await updateDoc(conversationRef, {
       ["lastMessage"]: {
-        sentBy: sender, // Initialize with empty values
-        message: lastMessage,
+        sender: sender, // Initialize with empty values
+        text: lastMessage,
         timestamp: new Date(), // Initialize with the epoch (1970-01-01T00:00:00Z)
       },
     });
@@ -210,3 +208,42 @@ export async function getMessages(
     throw error;
   }
 }
+
+// Real Time Update
+
+export async function listenToNewMessages(
+  currentUser_dtid: string,
+  msgWith_dtid: string,
+  onNewMessage: (message: Message[]) => void,
+  onError: (error: string) => void
+) {
+  try {
+    const conversationId = [currentUser_dtid, msgWith_dtid].sort().join("");
+    const conversationRef = doc(db, "conversation_rooms", conversationId);
+
+    // Listen to changes in the conversation document
+    const unsubscribe = onSnapshot(conversationRef, async (snapshot) => {
+      const conversationData = snapshot.data() as Conversation;
+      if (conversationData) {
+        const messages = conversationData.messages;
+        // Check if messages array exists and handle new messages
+        if (Array.isArray(messages)) {
+          // Handle each new message
+          onNewMessage(messages);
+        }
+      }
+    });
+
+    // Return the unsubscribe function to stop listening when needed
+    return unsubscribe;
+  } catch (error) {
+    // Handle errors
+    onError(String(error));
+    // Return null to indicate failure
+    return null;
+  }
+}
+
+// Example usage:
+// To stop listening:
+// unsubscribe();

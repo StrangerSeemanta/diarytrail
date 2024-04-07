@@ -6,7 +6,7 @@ import { useParams } from "react-router";
 import { getUserData_public, UserData_public } from "../Modules/Public_UserDataDB";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { Message, createRoom, getMessages, updateLastMessage, updateMessages } from "../Modules/ConversationsDB";
+import { Message, createRoom, getMessages, listenToNewMessages, updateLastMessage, updateMessages } from "../Modules/ConversationsDB";
 import { base64Encode } from "../Modules/tokenize";
 import { MdDone } from "react-icons/md";
 
@@ -45,8 +45,9 @@ function Messenger() {
                 try {
                     const userData = await getUserData_public(msgWith);
                     setConnectedUser(userData);
-                    await fetchMessages(currentUserDetails.dtid, msgWith);
-
+                    await listenToNewMessages(currentUserDetails.dtid, msgWith, (newMessage) => {
+                        setMessages(newMessage)
+                    }, (err => console.error(err)));
                     // Fetch messages for the selected conversation
                     // Example: Replace 'fetchMessagesForConversation' with your actual function
 
@@ -64,7 +65,6 @@ function Messenger() {
         setSent(false)
         if (connectedUser && currentUserDetails) {
             if (messageInput.trim() === "") return; // Don't send empty messages
-            setMessages(prevMessages => [...prevMessages, { text: messageInput, sender: currentUserDetails }]);
 
             // Clear the message input after sending
             setMessageInput("");
@@ -82,7 +82,8 @@ function Messenger() {
 
             await updateMessages(conversationId, {
                 sender: currentUserDetails,
-                text: messageInput
+                text: messageInput,
+                timestamp: new Date()
             })
 
             await fetchMessages(currentUserDetails.dtid, connectedUser.dtid)

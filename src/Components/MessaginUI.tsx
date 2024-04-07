@@ -2,26 +2,50 @@ import { Box, Flex, Text, Avatar, VStack, Center, Spinner, Input, } from "@chakr
 import { HTMLAttributes, ReactNode, forwardRef, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { UserData_public, getAllUsers, getUserData_public } from "../Modules/Public_UserDataDB";
-import { Conversation, getConversationForUser } from "../Modules/ConversationsDB";
+import { Conversation, getConversationForUser, listenToNewMessages } from "../Modules/ConversationsDB";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { base64Encode } from "../Modules/tokenize";
 import { twMerge } from "tailwind-merge";
+import SFX from "./../assets/pop.mp3"
 interface inboxListItemProps extends HTMLAttributes<HTMLDivElement> {
     isActive: boolean;
     data: UserData_public;
-    currentUserName?: string;
-    lastMessage?: Conversation["lastMessage"];
+    currentUserDetails: UserData_public;
 }
-const InboxListItem = forwardRef<HTMLDivElement, inboxListItemProps>(({ currentUserName, isActive, data, lastMessage, ...props }, ref) => {
-    const isItMe = lastMessage?.sentBy.displayName?.toLowerCase() === currentUserName?.toLowerCase();
+const InboxListItem = forwardRef<HTMLDivElement, inboxListItemProps>(({ currentUserDetails, isActive, data, ...props }, ref) => {
+    const [lastMsg, setLastMsg] = useState<Conversation["lastMessage"]>()
+    const [isItMe, setIsItMe] = useState(false);
+    useEffect(() => {
+        if (lastMsg) {
+            if (lastMsg.sender.displayName?.toLowerCase() === currentUserDetails?.displayName?.toLowerCase()) {
+                setIsItMe(true)
+            } else {
+                setIsItMe(false);
+            }
+        } else {
+            setIsItMe(false);
+        }
+    }, [currentUserDetails.displayName, lastMsg])
+    useEffect(() => {
+        const fetchLstMsg = async () => {
+            await listenToNewMessages(currentUserDetails.dtid, data.dtid, (newMessage) => {
+                if (lastMsg !== newMessage[newMessage.length - 1]) {
+                    setLastMsg(newMessage[newMessage.length - 1]);
+                    const audio = new Audio(SFX);
+                    audio.play();
+                }
+            }, (err => console.error(err)));
+        }
+        fetchLstMsg()
+    }, [currentUserDetails.dtid, data.dtid, lastMsg])
     return (
         <>
             <Flex ref={ref} as={Link} {...props} to={data.dtid} alignItems="start" mb={2} className="hover:brightness-95 cursor-pointer transition-all" bg={isActive ? "gray.100" : "transparent"} p={3} w={"100%"} overflow={"hidden"}>
                 <Avatar name={data.displayName || "User Account"} src={data.photoURL || undefined} size="md" mr={2} />
                 <VStack alignItems={"start"} gap={1}>
                     <h1 className="text-lg font-bold">{data.displayName}</h1>
-                    {lastMessage &&
-                        <div className={twMerge("last-msg truncate w-48 text-sm", !isItMe && "font-bold")}>{isItMe ? "me" : lastMessage.sentBy.displayName}: {lastMessage.message}</div>
+                    {lastMsg &&
+                        <div className={twMerge("last-msg truncate w-48 text-sm", !isItMe ? "font-bold" : "font-normal")}>{isItMe ? "me" : lastMsg.sender.displayName}: {lastMsg.text}</div>
                     }
                 </VStack>
             </Flex>
@@ -100,12 +124,13 @@ function MessagingUI({ children }: MessagingUIProps) {
                     <Box my={4}>
                         <Text px={2} className="font-bold text-lg flex justify-between pr-3 items-center"><span>Matched Results:</span> <span>{matchedUsers ? matchedUsers.length : 0}</span></Text>
                         {
-                            matchedUsers && matchedUsers.length > 0 ?
+                            matchedUsers && currentUserDetails && matchedUsers.length > 0 ?
                                 matchedUsers.map((user) => (
-                                    <InboxListItem key={user.dtid} onClick={() => {
-                                        setSearchValue('');
-                                        setMatchedUsers(null)
-                                    }} data={user} isActive={false} />
+                                    <InboxListItem currentUserDetails={currentUserDetails}
+                                        key={user.dtid} onClick={() => {
+                                            setSearchValue('');
+                                            setMatchedUsers(null)
+                                        }} data={user} isActive={false} />
                                 ))
                                 :
                                 <Text textAlign="center" my={4}>
@@ -124,11 +149,10 @@ function MessagingUI({ children }: MessagingUIProps) {
                                             {conversations.map((_conversationData, idx) => (
 
                                                 <InboxListItem
-                                                    currentUserName={currentUserDetails?.displayName || undefined}
+                                                    currentUserDetails={currentUserDetails}
                                                     key={_conversationData.conversationId + String(idx)}
                                                     isActive={location.pathname.includes(`messages/${_conversationData.MetaData.receiver.dtid}`)}
                                                     data={_conversationData.MetaData.sender.dtid === currentUserDetails.dtid ? _conversationData.MetaData.receiver : _conversationData.MetaData.sender}
-                                                    lastMessage={_conversationData.lastMessage}
                                                 />
 
                                             ))}
