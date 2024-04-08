@@ -1,11 +1,13 @@
-import { Box, Flex, Text, Avatar, VStack, Center, Spinner, Input, } from "@chakra-ui/react";
+import { Box, Flex, Text, Avatar, VStack, Center, Spinner, Input, IconButton, } from "@chakra-ui/react";
 import { HTMLAttributes, ReactNode, forwardRef, useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { UserData_public, getAllUsers, getUserData_public } from "../Modules/Public_UserDataDB";
 import { Conversation, getConversationForUser, listenToNewMessages } from "../Modules/ConversationsDB";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { base64Encode } from "../Modules/tokenize";
 import { twMerge } from "tailwind-merge";
+import { BiArrowBack } from "react-icons/bi";
+import { IoHome } from "react-icons/io5";
 interface inboxListItemProps extends HTMLAttributes<HTMLDivElement> {
     isActive: boolean;
     data: UserData_public;
@@ -38,7 +40,7 @@ const InboxListItem = forwardRef<HTMLDivElement, inboxListItemProps>(({ currentU
     }, [currentUserDetails.dtid, data.dtid, lastMsg])
     return (
         <>
-            <Flex ref={ref} as={Link} {...props} to={data.dtid} alignItems="start" mb={2} className="hover:brightness-95 cursor-pointer transition-all" bg={isActive ? "gray.100" : "transparent"} p={3} w={"100%"} overflow={"hidden"}>
+            <Flex ref={ref} as={Link} {...props} to={data.dtid} alignItems="start" mb={2} className={twMerge(" hover:brightness-95 cursor-pointer transition-all", !isActive ? "bg-gray-100" : "bg-gray-200 ")} p={3} w={"100%"} overflow={"hidden"}>
                 <Avatar name={data.displayName || "User Account"} src={data.photoURL || undefined} size="md" mr={2} />
                 <VStack alignItems={"start"} gap={1}>
                     <h1 className="text-lg font-bold">{data.displayName}</h1>
@@ -46,6 +48,7 @@ const InboxListItem = forwardRef<HTMLDivElement, inboxListItemProps>(({ currentU
                         <div className={twMerge("last-msg truncate w-48 text-sm", !isItMe ? "font-bold" : "font-normal")}>{isItMe ? "me" : lastMsg.sender.displayName}: {lastMsg.text}</div>
                     }
                 </VStack>
+
             </Flex>
         </>
     )
@@ -57,6 +60,7 @@ interface MessagingUIProps {
 function MessagingUI({ children }: MessagingUIProps) {
     const [searchValue, setSearchValue] = useState('')
     const location = useLocation();
+    const navigate = useNavigate();
     const [matchedUsers, setMatchedUsers] = useState<UserData_public[] | null>(null)
     const [totalusers, setTotalUsers] = useState<UserData_public[] | null>(null);
     const [conversations, setConversations] = useState<Conversation[] | null>([])
@@ -93,7 +97,7 @@ function MessagingUI({ children }: MessagingUIProps) {
         fetchData();
 
 
-    }, []);
+    }, [location.pathname]);
     const handleSearch = (value: string) => {
         if (!totalusers) {
             return
@@ -106,15 +110,27 @@ function MessagingUI({ children }: MessagingUIProps) {
     return (
         <Flex
             direction="row"
-            h="100vh"
-            w={"90%"}
+
             mx={"auto"}
             bg={"white"}
-            className="shadow-customized rounded-2xl overflow-x-hidden"
+            className="shadow-customized rounded-2xl overflow-x-hidden h-screen w-full lg:h-[90vh] lg:w-[90%] "
         >
             {/* Inbox Sidebar */}
-            <Box w="30%" py={4} px={1} >
-                <Text fontSize="xl" fontWeight="bold" px={2} mb={4}>Inbox</Text>
+            <Box className="w-full border-r-2 border-diaryAccentText" display={location.pathname === "/messages" ? "block" : "none"} py={4} px={1} >
+                <Flex px={2} justifyContent={"space-between"} alignItems={"center"} >
+                    <Flex gap={3} mb={4} alignItems={"center"}  >
+                        <IconButton onClick={() => navigate(-1)} bgColor="#4f4f4f" color={"white"} _hover={{ bgColor: "#1f1f1f" }} isRound size={"sm"} aria-label="back-btn">
+                            <BiArrowBack size={19} />
+                        </IconButton>
+                        <IconButton onClick={() => navigate("/")} bgColor="red" color={"white"} _hover={{ bgColor: "darkred" }} isRound size={"sm"} aria-label="back-btn">
+                            <IoHome size={18} />
+                        </IconButton>
+                        <Box className="flex justify-center items-center">
+                            <Text className="h-full w-full" fontSize="xl" fontWeight="bold" >Inbox</Text>
+                        </Box>
+                    </Flex>
+                    <Avatar size={"sm"} src={currentUserDetails?.photoURL || undefined} />
+                </Flex>
                 <Flex px={0}>
                     <Input isRequired borderRadius={"none"} type="search" variant={"filled"} colorScheme="teal" autoComplete="off" id="search_friends" value={searchValue} onChange={(e) => { setSearchValue(e.target.value); handleSearch(e.target.value) }} placeholder="Search Friends..." />
                 </Flex>
@@ -167,7 +183,7 @@ function MessagingUI({ children }: MessagingUIProps) {
                     </Box>}
             </Box>
             {/* Messaging Section */}
-            <div className="h-screen w-full bg-transparent border-l-2 border-diaryAccentText">
+            <div className={twMerge(" h-full w-full bg-transparent ", location.pathname === "/messages" ? "hidden" : "block")}>
                 {children}
             </div>
         </Flex>

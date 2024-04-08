@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -130,6 +131,30 @@ export async function getConversationForUser(
   }
 }
 
+export async function deleteRoom({
+  sender,
+  receiver,
+}: {
+  sender: Conversation["MetaData"]["sender"];
+  receiver: Conversation["MetaData"]["receiver"];
+}): Promise<void> {
+  try {
+    // Generate conversation ID based on sender and receiver IDs
+    const conversationId = [sender.dtid, receiver.dtid].sort().join("");
+
+    // Create conversation data
+
+    // Create a reference to the conversation document
+    const conversationRef = doc(db, "conversation_rooms", conversationId);
+    const snapshot = await getDoc(conversationRef);
+    if (snapshot.exists()) {
+      await deleteDoc(conversationRef);
+    }
+    // Use a transaction to ensure atomicity and consistency
+  } catch (error) {
+    throw new Error(`Error deleting conversation: ${error}`);
+  }
+}
 // Function to update the last message in a conversation
 export async function updateLastMessage(
   {

@@ -3,9 +3,11 @@ import { Outlet } from 'react-router'
 
 function MessengerPage() {
     return (
-        <MessagingUI >
-            <Outlet />
-        </MessagingUI>
+        <div className='messenger_page_container min-h-screen w-full flex justify-center items-center'>
+            <MessagingUI >
+                <Outlet />
+            </MessagingUI>
+        </div>
     )
 }
 

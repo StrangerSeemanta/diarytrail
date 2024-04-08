@@ -75,20 +75,7 @@ function Router() {
                                         <ProfilePage />
                                     </HeadPolish>
                                 } />
-                                <Route path="messages" element={<MessengerPage />}>
-                                    <Route index element={
-                                        <HeadPolish title="Chat With Our Friends - Diary Trail">
-                                            <div className='h-[80vh] w-full flex items-center justify-center'>
-                                                <h1 className='text-3xl font-bold text-gray-500'>Select A message</h1>
-                                            </div>
-                                        </HeadPolish>
-                                    } />
-                                    <Route path=":msgWith" element={
-                                        <HeadPolish title="Chat With Our Friends - Diary Trail">
-                                            <Messenger />
-                                        </HeadPolish>
-                                    } />
-                                </Route>
+
                                 {/* No page for dashboard links */}
 
                                 <Route path="/*" element={
@@ -137,7 +124,14 @@ function Router() {
                             )
                         )
                     }
+                    <Route path="messages" element={<MessengerPage />}>
 
+                        <Route path=":msgWith" element={
+                            <HeadPolish title="Chat With Our Friends - Diary Trail">
+                                <Messenger />
+                            </HeadPolish>
+                        } />
+                    </Route>
                     <Route path="/*" element={
                         <Box className="h-screen w-full flex justify-center items-center">
                             <Spinner size={"xl"} color="orange.500" label="Page Loading..." />
